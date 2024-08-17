@@ -1,0 +1,73 @@
+section .bss
+
+memory: resb 4096
+v_reg: resb 16
+i_reg: resw 1
+pc: resw 1
+
+; stack and stack pointer
+stack: resw 16
+stp: resb 1
+; timers
+dt: resb 1 ; delay timer
+st: resb 1 ; sound timer
+
+; 64x32 screen
+display: resb 2048
+
+section .data
+
+font_array:
+        db 0xF0, 0x90, 0x90, 0x90, 0xF0  
+        db 0x20, 0x60, 0x20, 0x20, 0x70 
+        db 0xF0, 0x10, 0xF0, 0x80, 0xF0 
+        db 0xF0, 0x10, 0xF0, 0x10, 0xF0 
+        db 0x90, 0x90, 0xF0, 0x10, 0x10 
+        db 0xF0, 0x80, 0xF0, 0x10, 0xF0 
+        db 0xF0, 0x80, 0xF0, 0x90, 0xF0 
+        db 0xF0, 0x10, 0x20, 0x40, 0x40 
+        db 0xF0, 0x90, 0xF0, 0x90, 0xF0 
+        db 0xF0, 0x90, 0xF0, 0x10, 0xF0 
+        db 0xF0, 0x90, 0xF0, 0x90, 0x90 
+        db 0xE0, 0x90, 0xE0, 0x90, 0xE0 
+        db 0xF0, 0x80, 0x80, 0x80, 0xF0 
+        db 0xE0, 0x90, 0x90, 0x90, 0xE0 
+        db 0xF0, 0x80, 0xF0, 0x80, 0xF0 
+        db 0xF0, 0x80, 0xF0, 0x80, 0x80 
+
+section .text
+
+init_cpu:
+        mov ax,0x200
+        mov [pc],ax
+        mov al,60
+        mov [dt],al
+        mov [dt],al
+; Copy fonts into memory
+        xor al,al
+        xor rcx,rcx ; used as a counter       
+.copy: 
+        mov al,[font_array + rcx * 1]
+        mov [memory + rcx * 1],al
+        inc cl
+        cmp cl,80
+        jne .copy
+        ret
+
+
+copy_rom:
+        ; program code starts at 0x200
+        lea rsi,[memory + 0x200]
+        ; Count already in rdx
+        call read
+        test rax,rax ; read returns -1 on failure
+        js read_error      
+        ret
+
+
+; Fetch a 16Bit value from memory
+; rdi -> address in memory
+fetch_word:
+        xor rax,rax
+        mov ax,[memory + rdi]
+        ret
