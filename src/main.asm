@@ -1,6 +1,7 @@
 %include "stdio.asm"
 %include "cpu.asm"
 %include "libstring.asm"
+%include "instruction.asm"
 
 ; Note to self:
 ; Calling convention: rdi,rsi,rdx,rcx,r8,r9
@@ -10,9 +11,9 @@ section .text
 global _start
 
 _start:
-; Check if a ROM path was provided
-; This is not C, arguments are not given via rdi,rsi,
-; but they are on the stack (rsp = argc, rsp + 8, argv[0], rsp + 16 = argv[1])
+        ; Check if a ROM path was provided
+        ; This is not C, arguments are not given via rdi,rsi,
+        ; but they are on the stack (rsp = argc, rsp + 8, argv[0], rsp + 16 = argv[1])
         mov rdi,[rsp] 
         cmp rdi,2 ; argc
         jne invalid_number_of_arguments
@@ -25,28 +26,38 @@ open_rom:
         js file_opening_failure
         mov rdi,rax ; fd now in rdi
 
-; Check if the size of the provided ROM does not exceed the memory limit
+        ; Check if the size of the provided ROM does not exceed the memory limit
         call check_file_size
      
 init:
-; Copy the ROM into memory
+        ; Copy the ROM into memory
         call copy_rom
-; close the file
+        ; close the file
         call close
         call init_cpu
         mov rdi,cpu_init_msg
         call puts
 
-        ; xor rdi,rdi
-        ; mov rdi,[pc]
-        ; call fetch_word
-        ; ; mov dil,[memory + 0x200]
-        ; mov rdi,rax
-        ; mov rsi,scratch
-        ; call to_ascii
-        ; mov rdi,scratch
-        ; call puts
-        
+run:
+        ; Fetch the next opcode (16bit)
+        xor rax,rax
+        mov rdi,[pc]
+        mov ax,[memory + rdi]
+        ; Chip 8 is big endian, while most x64 CPUs are little endian
+        ; so we need to swap the bytes around
+        xor ah,al
+        xor al,ah
+        xor ah,al
+
+        mov dx,ax ; make a copy of the original opcode
+        ; Get the most significant nibble of the opcode
+        ; which tells us what instruction to execute next
+        ; example: 0x1234 >> 12 = 0x1 -> JP 0x234
+        shr ax,12
+        ; Calculate the address of the function 
+        ; which corresponds to the opcode
+        lea rdi,[jumptable + rax * 8]
+        call [rdi]
         
 ; Program Exit Routine
         mov rsi,EXIT_SUCCESS
@@ -108,7 +119,7 @@ file_error: db "Failed to open ROM!",0xA,NULL
 file_size_msg: db "ROM exceeds memory size!",0xA,NULL
 file_fstat_error_msg: db "fstat failed!",0xA,NULL
 file_read_error_msg: db "Failed to read the ROM into memory!",0xA,NULL
-scratch: db 0x0,0x0,0x0,0xA,NULL
+scratch: db 0x0,0x0,0x0,0x0,0x0,0xA,NULL
 
 section .bss
 statbuffer: resb 144

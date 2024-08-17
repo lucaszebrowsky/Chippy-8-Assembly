@@ -1,3 +1,4 @@
+; %include "stdio.asm"
 section .data
 
 jumptable:
@@ -18,13 +19,54 @@ jumptable:
         dq INST_E
         dq INST_F
 
+func0: db "Func0\n",NULL
+func1: db "Func1\n",NULL
+func2: db "Func2\n",NULL
         
 section .text
 
 INST_0:
+mov rdi,func0
+        call puts
+        ret
 
 INST_1:
+        mov ax,0xfff
+        and dx,ax ; get nnn (0x1nnn)
+        ; mov pc
+        mov rdi,func1
+        call puts
+        ret
 
 INST_2:
+mov rdi,func2
+        call puts
+        ret
 
 INST_3:
+        ret
+INST_4:
+        ret
+INST_5:
+        ret
+INST_6:
+        ret
+INST_7:
+        ret
+INST_8:
+        ret
+INST_9:
+        ret
+INST_A:
+        ret
+INST_B:
+        ret
+INST_C:
+        ret
+INST_D:
+        ret
+INST_E:
+        ret
+INST_F:
+        ret
+

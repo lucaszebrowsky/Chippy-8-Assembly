@@ -64,10 +64,3 @@ copy_rom:
         js read_error      
         ret
 
-
-; Fetch a 16Bit value from memory
-; rdi -> address in memory
-fetch_word:
-        xor rax,rax
-        mov ax,[memory + rdi]
-        ret
