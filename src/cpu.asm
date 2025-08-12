@@ -1,3 +1,8 @@
+%ifndef __CPU__
+%define __CPU__
+
+%include "memory.asm"
+
 section .bss
 
 memory: resb 4096
@@ -15,9 +20,10 @@ st: resb 1 ; sound timer
 ; 64x32 screen
 display: resb 2048
 
-section .data
 
-font_array:
+section .rodata
+
+fonts:
         db 0xF0, 0x90, 0x90, 0x90, 0xF0  
         db 0x20, 0x60, 0x20, 0x20, 0x70 
         db 0xF0, 0x10, 0xF0, 0x80, 0xF0 
@@ -35,6 +41,7 @@ font_array:
         db 0xF0, 0x80, 0xF0, 0x80, 0xF0 
         db 0xF0, 0x80, 0xF0, 0x80, 0x80 
 
+
 section .text
 
 init_cpu:
@@ -43,17 +50,12 @@ init_cpu:
         mov al,60
         mov [dt],al
         mov [dt],al
-; Copy fonts into memory
-        xor al,al
-        xor rcx,rcx ; used as a counter       
-.copy: 
-        mov al,[font_array + rcx * 1]
-        mov [memory + rcx * 1],al
-        inc cl
-        cmp cl,80
-        jne .copy
+        ; Copy fonts into memory
+        mov rdi,memory
+        mov rsi,fonts
+        mov rdx,80
+        call memcpy
         ret
-
 
 copy_rom:
         ; program code starts at 0x200
@@ -64,3 +66,4 @@ copy_rom:
         js read_error      
         ret
 
+%endif ; __CPU__
