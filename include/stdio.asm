@@ -1,58 +1,80 @@
-; Standard Library containing common io functions
-%include "defines.asm"
+%ifndef __STDIO__
+%define __STDIO__
+
+%include "syscalls.asm"
+
+%define SDTIN  0
+%define STDOUT 1
+%define STDERR 2
+
+%define EXIT_SUCCESS 0
+%define EXIT_FAILURE 1
+
+%define O_RDONLY 0
+%define O_WRONLY 1
+%define O_RDWR   2
+
+%define NULL 0
+%define NEWLINE 0xA
 
 section .text 
 
-; Exit the program
+; exit(int exit_code)
+;
+; - rdi: The exit code the program should be return
 exit:
-        mov rax,EXIT
-        mov rdi,rsi
+        mov rax,SYS_EXIT
         syscall
 
-; open a file (readonly)
+
+; open(const char *filename, int flags, umode_t mode)
+;
+; - rdi: The path of the file to be opened
+; - rsi: The access modes (O_RDONLY, O_WRONLY, O_RDWR)
+; - rdx: 
 open:
         mov rax,SYS_OPEN
-        mov rsi,O_RDONLY
         syscall
         ret
 
-; Close a file
-; rdi -> filedescriptor
+
+; close(unsigned int fd)
+;
+; - rdi: file descriptor to the file which should be closed
 close:
         mov rax,SYS_CLOSE
         syscall
         ret
 
 
-; Read n bytes into a buffer from a given filedescriptor
-; rdi -> filedescriptor
-; rsi -> buffer
-; rdx -> number of bytes to read
+; read(unsigned int fd, char *buf, size_t count)
+;
+; - rdi: the file descriptor
+; - rsi: pointer to the output buffer
+; - rdx: number of bytes to read from the file
 read:
         mov rax,SYS_READ
         syscall
         ret
 
-; Get stats about a specific file. Results are stored in a struct stat buffer
-; rdi -> file descriptior
-; rsi -> pointer to the buffer
+
+; write(unsigned int fd, const char *buf, size_t count)
+; 
+; - rdi: the file descriptor
+; - rsi: the buffer who shall be read
+; - rdx: number of bytes which should be written
+write:
+        mov rax,SYS_WRITE
+        syscall
+        ret
+
+; fstat(unsigned int fd, struct stat *statbuf)
+;
+; - rdi: the file descriptor
+; - rsi: pointer to a stat buffer
 fstat:
         mov rax,SYS_FSTAT
         syscall
         ret
-
-; Print a null-terminated string to stdout
-; Param: rdi -> pointer to string
-puts:
-        xor rcx,rcx ; used to count number of characters in the string
-.count:
-        mov al,[rdi + rcx * 1]
-        inc rcx
-        cmp al,0x0
-        jne .count
-        mov rax,SYS_WRITE
-        mov rsi,rdi ; Move the pointer to the string into rsi
-        mov rdi,STDOUT
-        mov rdx,rcx ; Number of bytes
-        syscall
-        ret
+ 
+%endif ; __STDIO__
