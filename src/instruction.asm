@@ -1,9 +1,10 @@
-%ifndef __INSTRUCTION__
-%define __INSTRUCTION__
+%include "stddef.inc"
+%include "strings.inc"
+%include "cpu.inc"
 
-%include "stdio.asm"
+global jumptable
 
-section .data
+        section .data
 
 jumptable:
         dq INST_0 ; CLS,RET,SYS addr
@@ -23,25 +24,28 @@ jumptable:
         dq INST_E
         dq INST_F
 
-section .rodata
-        func0: db "Func0",NEWLINE,NULL
-        func1: db "Func1",NEWLINE,NULL
-        func2: db "Func2",NEWLINE,NULL
-        func3: db "Func3",NEWLINE,NULL
-        func4: db "Func4",NEWLINE,NULL
-        func5: db "Func5",NEWLINE,NULL
-        func6: db "Func6",NEWLINE,NULL
-        func7: db "Func7",NEWLINE,NULL
-        func8: db "Func8",NEWLINE,NULL
-        func9: db "Func9",NEWLINE,NULL
-        funcA: db "FuncA",NEWLINE,NULL
-        funcB: db "FuncB",NEWLINE,NULL
-        funcC: db "FuncC",NEWLINE,NULL
-        funcD: db "FuncD",NEWLINE,NULL
-        funcE: db "FuncE",NEWLINE,NULL
-        funcF: db "FuncF",NEWLINE,NULL
+
+        section .rodata
+
+asciizln func0, "Func0"
+asciizln func1, "Func0"
+asciizln func2, "Func0"
+asciizln func3, "Func0"
+asciizln func4, "Func0"
+asciizln func5, "Func0"
+asciizln func6, "Func0"
+asciizln func7, "Func0"
+asciizln func8, "Func0"
+asciizln func9, "Func0"
+asciizln funcA, "Func0"
+asciizln funcB, "Func0"
+asciizln funcC, "Func0"
+asciizln funcD, "Func0"
+asciizln funcE, "Func0"
+asciizln funcF, "Func0"
+
         
-section .text
+        section .text
 
 INST_0:
         mov rdi,func0
@@ -52,22 +56,22 @@ INST_0:
 INST_1:
         mov ax,0xfff
         and dx,ax         ; get nnn (0x1nnn)
-        mov [pc],dx
+        mov [rel pc],dx
         mov rdi,func1
         call puts
         ret
 
 ; Call subroutine at address nnn
 INST_2:
-        inc byte [stp]
+        inc byte [rel stp]
         ; Push the current PC onto the stack
-        mov rdi,[stp]      ; stack pointer
+        mov rdi, [rel stp]      ; stack pointer
         lea rdi,[stack + rdi]
-        mov ax,[pc]
+        mov ax,[rel pc]
         mov [rdi],ax
         mov ax,0xfff
         and dx,ax          ; nnn
-        mov [pc],dx
+        mov [rel pc], dx
         mov rdi,func2
         call puts
         ret
@@ -83,18 +87,16 @@ INST_3:
         pop dx
         mov ax,0x00ff
         and dx,ax
+        ; compare v[x] and kk
         mov al,[v_reg + rsi] ; mov v[x] into al
         cmp al,dl
-        jne .no_skip
-        ; skip nexp instruction
-        mov rax,[pc]
-        add rax,4
-        mov [pc],rax
-        ret    
-.no_skip: ; goto next instruction
-        mov rax,[pc]
-        add rax,2
-        mov [pc],rax
+
+        mov rax,[rel pc]
+        mov rcx,2
+        mov rdx,4
+        cmove rcx,rdx ; skip the next instruction, if v[x] == kk
+        add rax,rcx
+        mov [rel pc],rax
         ret    
          
 INST_4:
@@ -110,12 +112,39 @@ INST_5:
 INST_6:
         mov rdi,func6
         call puts
-        ; mov ax,0xff
+        xor rsi,rsi
+        push dx
+        mov ax,0x0f00
+        and dx,ax
+        shr dx,8 ; x
+        mov sil,dl ; mov x into sil
+        pop dx
+        mov ax,0x00ff
+        and dx,ax ; kk
+        mov [v_reg + rsi],dl
+        mov rax,[pc]
+        add rax,2
+        mov [rel pc],rax
         ret
 
 INST_7:
         mov rdi,func7
         call puts
+        xor rsi,rsi
+        push dx
+        mov ax,0x0f00
+        and dx,ax
+        shr dx,8 ; x
+        mov sil,dl ; mov x into sil
+        pop dx
+        mov ax,0x00ff
+        and dx,ax ; kk
+        mov rax,[v_reg + rsi]
+        add rax,rdx
+        mov [v_reg + rsi],rax
+        mov rax,[pc]
+        add rax,2
+        mov [pc],rax
         ret
 
 INST_8:
@@ -153,6 +182,9 @@ INST_C:
 INST_D:
         mov rdi,funcD
         call puts
+        mov rax,[pc]
+        add rax,2
+        mov [pc],rax
         ret
 INST_E:
         mov rdi,funcE
@@ -162,5 +194,3 @@ INST_F:
         mov rdi,funcF
         call puts
         ret
-
-%endif ; __INSTRUCTION__
